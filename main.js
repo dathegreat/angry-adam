@@ -57,6 +57,8 @@ let realCounter = 0;
 let realInterval = -1;
 let startScreen = true;
 let cutScene = false;
+let chance = Math.random()*(300 - 200) + 200;
+let frameCount = 0;
 
 function initLoop(){
     //load initial start screen
@@ -69,8 +71,9 @@ function initLoop(){
         //draw false start button
         if(!realStart){
             drawStart();
-        }else{
-            //draw real start button randomly
+            frameCount += 1;
+        }else{//draw real start button
+            //animate button flying
             if( realCounter < 50){
                 realY += realInterval;
                 realCounter += 1;
@@ -82,13 +85,11 @@ function initLoop(){
             realX += 1;
             drawRealStart(realX, realY);
             drawStart();
-            
         }
         //draw title text
         drawTitle();
-        
-        let chance = Math.random()*100;
-        if(chance <= 1){
+        //every frame, determine whether real start spawns
+        if(frameCount >= chance){
             realStart = true;
         }
 
@@ -102,27 +103,27 @@ function initLoop(){
     }
    
 }
-
+let quizNumbers = [2, 3, 1, 0, 0];
 let quizAnswers = [
     ["1892", "1998", "2022", "3069"],
     ["Plagued with mice", "Not Alive", "Three-Dimensional", "Two-Dimensional"],
     ["God", "The April Fools Gods", "Himself", "You"],
     ["Snuggly Blankets", "Puppies", "Whole Wheat", "None of these"],
-    ["ANGER", "HANDSOMENESS", "PICKLES", "ALMOST PERFECT BALANCE"]
-]
+    ["ANGER", "HANDSOMENESS", "PICKLES", "NOSTALGIA"]
+];
 let quizQuestions = [
     "What year was Adam born?",
     "Describe Adam's living situation",
     "Who cursed Adam?",
-    "Adam's indomitable rage could only be cured by:",
+    "Adam's rage could only be cured by:",
     "What was Adam cursed with?"
-]
+];
 let quizIt = 0;
 let answerY = [];
 let chosenAnswer;
 
 function quizLoop(){
-    
+    //draw quiz screen title
     ctx.fillStyle = "#89CFF0";
     ctx.fillRect(0,0, maxWidth, maxHeight)
     ctx.fillStyle = "white";
@@ -132,23 +133,24 @@ function quizLoop(){
     ctx.shadowColor = 'rgba(0, 0, 255, 0.5)';
     ctx.font = "bold 3em verdana, sans-serif";
     ctx.fillText("QUIZ TIME!", maxWidth/2, maxWidth*0.1);
-    
+    //draw quiz question
     ctx.font = "bold 1.5em verdana, sans-serif";
     ctx.shadowOffsetX = maxWidth*0.005;
     ctx.shadowOffsetY = maxWidth*0.005;
     let question = quizQuestions[quizIt];
-    
     ctx.fillText(question, maxWidth/2, maxWidth*0.25);
     answerY = [];
     answerY.push(maxHeight*0.35);
+    //draw each possible answer
     for(var answer = 0; answer < quizAnswers[quizIt].length; answer++){
+        //draw answer box
         ctx.fillStyle = "#00A36C";
         ctx.shadowOffsetX = maxWidth*0.01;
         ctx.shadowOffsetY = maxWidth*0.01;
         ctx.shadowBlur = 0.25;
         ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
         ctx.fillRect((maxWidth/2) - ((maxWidth/6)), answerY[answer], maxWidth/3, maxHeight/10);
-        //draw start text
+        //draw answer text
         ctx.shadowColor = 'rgba(0,0,0,0)';
         ctx.fillStyle = "white";
         ctx.font = "bold 1em verdana, sans-serif";
@@ -157,6 +159,47 @@ function quizLoop(){
         ctx.fillText(quizAnswers[quizIt][answer], maxWidth/2, answerY[answer] + maxHeight/25);
         answerY.push(answerY[answer] + maxHeight*0.15);
     }
+
+}
+
+function wrongAnswer(){
+    //draw WRONG randomly on the page
+    ctx.fillStyle = "red";
+    ctx.shadowOffsetX = maxWidth*0.005;
+    ctx.shadowOffsetY = maxWidth*0.005;
+    ctx.shadowBlur = 0.25;
+    ctx.shadowColor = 'rgba(0, 0, 255, 0.5)';
+    ctx.font = "bold 1.5em verdana, sans-serif";
+    ctx.fillText("WRONG", (Math.random() * (maxWidth*0.8 - maxWidth*0.2) + maxWidth*0.2), 
+        (Math.random() * (maxWidth*0.8 - maxWidth*0.2) + maxWidth*0.2) );
+}
+
+function rightAnswer(){
+    //draw CORRECT randomly on the page
+    //then call next question set until all questions answered
+    ctx.fillStyle = "green";
+    ctx.shadowOffsetX = maxWidth*0.005;
+    ctx.shadowOffsetY = maxWidth*0.005;
+    ctx.shadowBlur = 0.25;
+    ctx.shadowColor = 'rgba(0, 0, 255, 0.5)';
+    ctx.font = "bold 2em verdana, sans-serif";
+    ctx.fillText("CORRECT!", (Math.random() * (maxWidth*0.8 - maxWidth*0.2) + maxWidth*0.2), 
+        (Math.random() * (maxWidth*0.8 - maxWidth*0.2) + maxWidth*0.2) );
+    //display correct for half a second
+    nextQuestion = () => { setTimeout(function() { 
+        if(quizIt == quizQuestions.length -1){
+            gameLoop();
+        }
+        else{
+            quizIt += 1;
+            quizLoop();
+        }
+     }, 500); }
+
+    nextQuestion();
+}
+
+function gameLoop(){
 
 
 }
@@ -375,6 +418,13 @@ function clickHandler(x, y){
         else if(y > answerY[3] && y < answerY[3] + maxHeight/10){
             chosenAnswer = 3;
         }
-        console.log(chosenAnswer);
+
+        if(chosenAnswer == quizNumbers[quizIt]){
+            rightAnswer();
+        }
+        else{
+            wrongAnswer();
+        }
+        
     }
 }
