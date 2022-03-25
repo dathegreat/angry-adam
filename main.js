@@ -202,14 +202,78 @@ function rightAnswer(){
     nextQuestion();
 }
 
-function gameLoop(){
-    //draw sky
+function drawSky(){
     ctx.fillStyle = "#89CFF0";
     ctx.fillRect(0,0, maxWidth, maxHeight)
+}
+
+let adamHeight;
+let adamWidth;
+
+const Adam = {
+    _x : 0,
+    _y : 0,
+    get x(){ return this._x },
+    set x(value){ this._x = value },
+    get y(){ return this._y },
+    set y(value){ this._y = value},
+
+    drawAdam: function(){
+        //draw body
+        ctx.fillStyle = "#B51C2D"
+        ctx.fillRect(this._x, this._y, adamWidth, adamHeight)
+        //draw pants
+        ctx.fillStyle = "#241CB5"
+        ctx.fillRect(this._x, this._y + (maxHeight * 0.075), adamWidth, adamHeight /4)
+        //draw eyes
+        let eyeball_size = maxHeight * 0.02;
+        let pupil_size = maxHeight * 0.01;
+        //draw whites
+        ctx.fillStyle = "white";
+        ctx.beginPath();
+        // ctx.arc(this._x + eyeball_size, this._y + eyeball_size, 
+        //     eyeball_size, 0, Math.PI*2);
+        ctx.arc(this._x + adamWidth - eyeball_size, this._y + eyeball_size, 
+            eyeball_size, 0, Math.PI*2);
+        ctx.fill();
+        //draw irises
+        ctx.fillStyle = "black";
+        ctx.beginPath();
+        // ctx.arc(this._x + pupil_size, this._y + pupil_size, 
+        //     pupil_size, 0, Math.PI*2);
+        ctx.arc(this._x + adamWidth - pupil_size, this._y + pupil_size, 
+            pupil_size, 0, Math.PI*2);
+        ctx.fill();
+    }
+}
+
+function drawGoal(){
+    //draw building
+    ctx.fillStyle = "#954535";
+    ctx.fillRect(maxWidth*0.65, maxHeight*0.5, maxWidth*0.35, maxHeight*0.3)
+    //draw door
+    ctx.fillStyle = "#87CEEB"
+    ctx.fillRect(maxWidth*0.7, maxHeight*0.65, maxWidth*0.1, maxHeight*0.15);
+    ctx.font = "bold 0.95em verdana, sans-serif";
+    ctx.fillText("THERAPY", maxWidth*0.75, maxHeight*0.55 );
+}
+
+function gameLoop(){
+    //draw sky
+    drawSky();
+    //draw clouds
+    cloudLoop();
     //draw ground
     ctx.fillStyle = "#00A36C";
     ctx.fillRect(0, maxHeight*0.8, maxWidth, maxHeight*0.2);
-
+    //draw adam at inital coords
+    adamHeight = maxHeight * 0.1;
+    adamWidth = maxHeight * 0.1;
+    Adam.x = maxWidth*0.1;
+    Adam.y = (maxWidth*0.8) - adamHeight;
+    Adam.drawAdam();
+    //draw flag
+    drawGoal();
 }
 
 let monologueIt = 0;
