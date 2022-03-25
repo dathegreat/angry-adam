@@ -48,6 +48,7 @@ function init(canvasHeight, canvasWidth){
     //call title screen animation loop
     initLoop();
     canvas.onclick = (event) => clickHandler(event.offsetX, event.offsetY);
+    canvas.onkeydown = (event) => keyHandler(event);
 }
 
 let realStart = false;
@@ -103,7 +104,7 @@ function initLoop(){
     }
    
 }
-let quizNumbers = [2, 3, 1, 0, 0];
+let quizNumbers = [2, 3, 1, 3, 0];
 let quizAnswers = [
     ["1892", "1998", "2022", "3069"],
     ["Plagued with mice", "Not Alive", "Three-Dimensional", "Two-Dimensional"],
@@ -188,6 +189,8 @@ function rightAnswer(){
     //display correct for half a second
     nextQuestion = () => { setTimeout(function() { 
         if(quizIt == quizQuestions.length -1){
+            quiz = false;
+            game = true;
             gameLoop();
         }
         else{
@@ -200,7 +203,12 @@ function rightAnswer(){
 }
 
 function gameLoop(){
-
+    //draw sky
+    ctx.fillStyle = "#89CFF0";
+    ctx.fillRect(0,0, maxWidth, maxHeight)
+    //draw ground
+    ctx.fillStyle = "#00A36C";
+    ctx.fillRect(0, maxHeight*0.8, maxWidth, maxHeight*0.2);
 
 }
 
@@ -427,4 +435,22 @@ function clickHandler(x, y){
         }
         
     }
+}
+
+function playerMove(direction){
+    switch( direction){
+        case("r"):
+            Player.x
+        
+    }
+
+}
+
+function keyHandler(event){
+    if(game){
+        if( event.code == "ArrowRight" ){
+            playerMove("r")
+        }
+    }
+
 }
