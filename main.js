@@ -48,7 +48,8 @@ function init(canvasHeight, canvasWidth){
     //call title screen animation loop
     initLoop();
     canvas.onclick = (event) => clickHandler(event.offsetX, event.offsetY);
-    canvas.onkeydown = (event) => keyHandler(event);
+    document.onkeydown = keyDownHandler;
+    document.onkeyup = keyUpHandler;
 }
 
 let realStart = false;
@@ -65,6 +66,7 @@ function initLoop(){
     //load initial start screen
     if( startScreen ){
         //draw background
+//<--------------------------------------------------(nice)
         ctx.fillStyle = "#89CFF0";
         ctx.fillRect(0,0, maxWidth, maxHeight)
         //draw floating clouds
@@ -175,6 +177,7 @@ function wrongAnswer(){
         (Math.random() * (maxWidth*0.8 - maxWidth*0.2) + maxWidth*0.2) );
 }
 
+let game = false;
 function rightAnswer(){
     //draw CORRECT randomly on the page
     //then call next question set until all questions answered
@@ -191,7 +194,7 @@ function rightAnswer(){
         if(quizIt == quizQuestions.length -1){
             quiz = false;
             game = true;
-            gameLoop();
+            gameInit();
         }
         else{
             quizIt += 1;
@@ -213,10 +216,23 @@ let adamWidth;
 const Adam = {
     _x : 0,
     _y : 0,
+    _isJumping : false,
+    _acceleration : 0,
+    _power : 10,
+    _jump_juice : 10,
+
     get x(){ return this._x },
     set x(value){ this._x = value },
     get y(){ return this._y },
     set y(value){ this._y = value},
+    get jumping(){ return this._isJumping },
+    set jumping(bool){ this._isJumping = bool},
+    get acceleration() { return this._acceleration },
+    set acceleration(acc) { this._acceleration = acc},
+    get power(){ return this._power },
+    set power(pow){ this._power = pow },
+    get juice(){ return this._jump_juice },
+    set juice(juice_quantity){ this._jump_juice = juice_quantity},
 
     drawAdam: function(){
         //draw body
@@ -258,7 +274,7 @@ function drawGoal(){
     ctx.fillText("THERAPY", maxWidth*0.75, maxHeight*0.55 );
 }
 
-function gameLoop(){
+function gameInit(){
     //draw sky
     drawSky();
     //draw clouds
@@ -272,8 +288,28 @@ function gameLoop(){
     Adam.x = maxWidth*0.1;
     Adam.y = (maxWidth*0.8) - adamHeight;
     Adam.drawAdam();
-    //draw flag
+    //draw goal building
     drawGoal();
+    //call game loop which loops recursively
+    gameLoop();
+}
+
+function gameLoop(){
+    //draw sky
+    drawSky();
+    //draw clouds
+    cloudLoop();
+    //draw ground
+    ctx.fillStyle = "#00A36C";
+    ctx.fillRect(0, maxHeight*0.8, maxWidth, maxHeight*0.2);
+    //draw adam
+    Adam.drawAdam();
+    //draw goal building
+    drawGoal();
+    //call user movements based on cached input keys
+    moveAdam();
+    //call loop again around 30fps
+    setTimeout(gameLoop, 30);
 }
 
 let monologueIt = 0;
@@ -501,20 +537,134 @@ function clickHandler(x, y){
     }
 }
 
-function playerMove(direction){
-    switch( direction){
-        case("r"):
-            Player.x
-        
-    }
-
+function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-function keyHandler(event){
-    if(game){
-        if( event.code == "ArrowRight" ){
-            playerMove("r")
+//moves adam in a given direction, with acceleration and deceleration 
+let maxSpeed = 10;
+let inertia = 0.5;
+let moveSpeed = 30 //ms
+let keyCache = {
+    right : false,
+    left: false,
+    up: false
+};
+async function moveRight(momentum){
+//if keydown, accelerate right
+    if(momentum == "acc"){
+        if( Adam.acceleration < maxSpeed ){
+            Adam.acceleration += inertia;
+        }
+        Adam.x += Adam.acceleration;
+        await sleep(moveSpeed);
+     }else{ //if keyup, decelerate right unless right key is pressed
+        if( Adam.acceleration > 0 && !keyCache.left){
+            Adam.x += Adam.acceleration;
+            Adam.acceleration -= inertia;
+            await sleep(moveSpeed);
+            await moveRight("dec");
         }
     }
+}
+async function moveLeft(momentum){
+    //if keydown, accelerate left
+    if(momentum == "acc"){
+        if( Adam.acceleration < maxSpeed ){
+            Adam.acceleration += inertia;
+        }
+        Adam.x -= Adam.acceleration;
+        await sleep(moveSpeed);
+    }else{ //if keyup, decelerate left unless right key is pressed
+        if( Adam.acceleration > 0 && !keyCache.right){
+            Adam.x -= Adam.acceleration;
+            Adam.acceleration -= inertia;
+            await sleep(moveSpeed);
+            await moveLeft("dec");
+        }
+    }
+}
+let gravity_acceleration = 1;
+async function moveDown(){
+    //make Adam fall back to the ground
+    if(Adam.y < maxHeight * 0.7){
+        Adam.y += Adam.power + gravity_acceleration;
+        gravity_acceleration *= 1.5;
+        await sleep(moveSpeed)
+        await moveDown();
+    }
+    //lock adam to the ground once he hits it and replenish juice
+    if (Adam.y >= maxHeight * 0.7){
+        Adam.y = maxHeight * 0.7;
+        Adam.juice = 10;
+        Adam.jumping = false;
+        gravity_acceleration = 1;
+    }
+}
+async function moveUp(){
+    //if jump juice is full, move up
+    if( Adam.juice > 0 ){
+        Adam.y -= Adam.power + (Adam.juice*2);
+        Adam.juice -= 1;
+        await sleep(moveSpeed);
+        await moveUp();
+    } //if jump juice runs out, fall back down
+    if(Adam.juice <= 0){
+        await moveDown();
+    }
+    
+}
 
+async function moveAdam(){
+    //if right keypress held
+    if(keyCache.right){
+        await moveRight("acc");
+    }
+    //if left keypress held
+    if(keyCache.left){
+        await moveLeft("acc");
+    }
+    //if up keypress held    
+    if(keyCache.up){
+        //adam can only jump if on the ground 
+        if( !Adam.jumping ){
+            Adam.jumping = true;
+            await moveUp();
+        }
+    }
+    
+}
+
+async function keyDownHandler(event){
+    if(game){
+        if( event.code == "ArrowRight" ){
+            //cancel left motion if right is pressed before left is released
+            if(keyCache.left = true){
+                keyCache.left = false;
+            }
+            keyCache.right = true;
+        }else if( event.code == "ArrowLeft" ){
+            //cancel right motion if left is pressed before right is released
+            if(keyCache.right = true){
+                keyCache.right = false;
+            }
+            keyCache.left = true;
+        }else if( event.code == "ArrowUp" ){
+            keyCache.up = true;
+        }
+    }
+}
+
+async function keyUpHandler(event){
+    if(game){
+        if( event.code == "ArrowRight" ){
+            keyCache.right = false;
+            await moveRight("dec");
+        }else if( event.code == "ArrowLeft" ){
+            keyCache.left = false;
+            await moveLeft("dec");
+        }else if( event.code == "ArrowUp"){
+            keyCache.up = false;
+        }
+    }
 }
